@@ -38,5 +38,5 @@ isaacgym_task_map = {
     "AnymalTerrain": AnymalTerrain,
     "Humanoid": Humanoid,
     "HumanoidAMP": HumanoidAMP,
-    "bolt10": Bolt10
+    "Bolt10": Bolt10
 }

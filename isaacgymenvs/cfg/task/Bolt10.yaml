@@ -6,7 +6,7 @@ physics_engine: 'physx'
 env:
   numEnvs: ${resolve_default:4096,${...num_envs}}
   numObservations: 188
-  numActions: 12
+  numActions: 10
   envSpacing: 3.  # [m]
   enableDebugVis: False
 
@@ -49,25 +49,24 @@ env:
     decimation: 4
 
   defaultJointAngles:  # = target angles when action = 0.0
-    LF_HAA: 0.03    # [rad]
-    LH_HAA: 0.03    # [rad]
-    RF_HAA: -0.03   # [rad]
-    RH_HAA: -0.03   # [rad]
+    L_HipYaw_Joint: 0.03    # [rad]
+    L_HipRoll_Joint: 0.03    # [rad]
+    L_HipPitch_Joint: -0.03   # [rad]
 
-    LF_HFE: 0.4     # [rad]
-    LH_HFE: -0.4    # [rad]
-    RF_HFE: 0.4     # [rad]
-    RH_HFE: -0.4    # [rad]
+    L_KneePitch_Joint: -0.03   # [rad]
+    L_AnklePitch_Joint: 0.4     # [rad]
+    
+    R_HipYaw_Joint: -0.4    # [rad]
+    R_HipRoll_Joint: 0.4     # [rad]
+    R_HipPitch_Joint: -0.4    # [rad]
 
-    LF_KFE: -0.8    # [rad]
-    LH_KFE: 0.8     # [rad]
-    RF_KFE: -0.8    # [rad]
-    RH_KFE: 0.8     # [rad]
+    R_KneePitch_Joint: -0.8    # [rad]
+    R_AnklePitch_Joint: 0.8     # [rad]
 
   urdfAsset:
     file: "urdf/bolt10/urdf/bolt10.urdf"
-    footName: SHANK # SHANK if collapsing fixed joint, FOOT otherwise
-    kneeName: THIGH
+    footName: Foot # SHANK if collapsing fixed joint, FOOT otherwise
+    kneeName: Upper
     collapseFixedJoints: True
     fixBaseLink: false
     defaultDofDriveMode: 4 # see GymDofDriveModeFlags (0 is none, 1 is pos tgt, 2 is vel tgt, 4 effort)

@@ -228,12 +228,12 @@ class Bolt10(VecTask):
         asset_options.thickness = 0.01
         asset_options.disable_gravity = False
 
-        anymal_asset = self.gym.load_asset(self.sim, asset_root, asset_file, asset_options)
-        self.num_dof = self.gym.get_asset_dof_count(anymal_asset)
-        self.num_bodies = self.gym.get_asset_rigid_body_count(anymal_asset)
+        bolt_asset = self.gym.load_asset(self.sim, asset_root, asset_file, asset_options)
+        self.num_dof = self.gym.get_asset_dof_count(bolt_asset)
+        self.num_bodies = self.gym.get_asset_rigid_body_count(bolt_asset)
 
         # prepare friction randomization
-        rigid_shape_prop = self.gym.get_asset_rigid_shape_properties(anymal_asset)
+        rigid_shape_prop = self.gym.get_asset_rigid_shape_properties(bolt_asset)
         friction_range = self.cfg["env"]["learn"]["frictionRange"]
         num_buckets = 100
         friction_buckets = torch_rand_float(friction_range[0], friction_range[1], (num_buckets,1), device=self.device)
@@ -242,8 +242,8 @@ class Bolt10(VecTask):
         start_pose = gymapi.Transform()
         start_pose.p = gymapi.Vec3(*self.base_init_state[:3])
 
-        body_names = self.gym.get_asset_rigid_body_names(anymal_asset)
-        self.dof_names = self.gym.get_asset_dof_names(anymal_asset)
+        body_names = self.gym.get_asset_rigid_body_names(bolt_asset)
+        self.dof_names = self.gym.get_asset_dof_names(bolt_asset)
         foot_name = self.cfg["env"]["urdfAsset"]["footName"]
         knee_name = self.cfg["env"]["urdfAsset"]["kneeName"]
         feet_names = [s for s in body_names if foot_name in s]
@@ -252,7 +252,7 @@ class Bolt10(VecTask):
         self.knee_indices = torch.zeros(len(knee_names), dtype=torch.long, device=self.device, requires_grad=False)
         self.base_index = 0
 
-        dof_props = self.gym.get_asset_dof_properties(anymal_asset)
+        dof_props = self.gym.get_asset_dof_properties(bolt_asset)
 
         # env origins
         self.env_origins = torch.zeros(self.num_envs, 3, device=self.device, requires_grad=False)
@@ -265,7 +265,7 @@ class Bolt10(VecTask):
 
         env_lower = gymapi.Vec3(-spacing, -spacing, 0.0)
         env_upper = gymapi.Vec3(spacing, spacing, spacing)
-        self.anymal_handles = []
+        self.bolt_handles = []
         self.envs = []
         for i in range(self.num_envs):
             # create env instance
@@ -278,18 +278,18 @@ class Bolt10(VecTask):
 
             for s in range(len(rigid_shape_prop)):
                 rigid_shape_prop[s].friction = friction_buckets[i % num_buckets]
-            self.gym.set_asset_rigid_shape_properties(anymal_asset, rigid_shape_prop)
-            anymal_handle = self.gym.create_actor(env_handle, anymal_asset, start_pose, "anymal", i, 0, 0)
-            self.gym.set_actor_dof_properties(env_handle, anymal_handle, dof_props)
+            self.gym.set_asset_rigid_shape_properties(bolt_asset, rigid_shape_prop)
+            bolt_handle = self.gym.create_actor(env_handle, bolt_asset, start_pose, "bolt10", i, 0, 0)
+            self.gym.set_actor_dof_properties(env_handle, bolt_handle, dof_props)
             self.envs.append(env_handle)
-            self.anymal_handles.append(anymal_handle)
+            self.bolt_handles.append(bolt_handle)
 
         for i in range(len(feet_names)):
-            self.feet_indices[i] = self.gym.find_actor_rigid_body_handle(self.envs[0], self.anymal_handles[0], feet_names[i])
+            self.feet_indices[i] = self.gym.find_actor_rigid_body_handle(self.envs[0], self.bolt_handles[0], feet_names[i])
         for i in range(len(knee_names)):
-            self.knee_indices[i] = self.gym.find_actor_rigid_body_handle(self.envs[0], self.anymal_handles[0], knee_names[i])
+            self.knee_indices[i] = self.gym.find_actor_rigid_body_handle(self.envs[0], self.bolt_handles[0], knee_names[i])
 
-        self.base_index = self.gym.find_actor_rigid_body_handle(self.envs[0], self.anymal_handles[0], "base")
+        self.base_index = self.gym.find_actor_rigid_body_handle(self.envs[0], self.bolt_handles[0], "base_link")
 
     def check_termination(self):
         self.reset_buf = torch.norm(self.contact_forces[:, self.base_index, :], dim=1) > 1.
