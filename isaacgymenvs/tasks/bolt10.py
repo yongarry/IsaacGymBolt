@@ -140,7 +140,7 @@ class Bolt10(VecTask):
         self.torques = torch.zeros(self.num_envs, self.num_actions, dtype=torch.float, device=self.device, requires_grad=False)
         self.actions = torch.zeros(self.num_envs, self.num_actions, dtype=torch.float, device=self.device, requires_grad=False)
         self.last_actions = torch.zeros(self.num_envs, self.num_actions, dtype=torch.float, device=self.device, requires_grad=False)
-        self.feet_air_time = torch.zeros(self.num_envs, 4, dtype=torch.float, device=self.device, requires_grad=False)
+        self.feet_air_time = torch.zeros(self.num_envs, 2, dtype=torch.float, device=self.device, requires_grad=False)
         self.last_dof_vel = torch.zeros_like(self.dof_vel)
 
         self.height_points = self.init_height_points()
@@ -155,7 +155,7 @@ class Bolt10(VecTask):
         torch_zeros = lambda : torch.zeros(self.num_envs, dtype=torch.float, device=self.device, requires_grad=False)
         self.episode_sums = {"lin_vel_xy": torch_zeros(), "lin_vel_z": torch_zeros(), "ang_vel_z": torch_zeros(), "ang_vel_xy": torch_zeros(),
                              "orient": torch_zeros(), "torques": torch_zeros(), "joint_acc": torch_zeros(), "base_height": torch_zeros(),
-                             "air_time": torch_zeros(), "collision": torch_zeros(), "stumble": torch_zeros(), "action_rate": torch_zeros(), "hip": torch_zeros()}
+                             "air_time": torch_zeros(), "collision": torch_zeros(), "stumble": torch_zeros(), "action_rate": torch_zeros()}
 
         self.reset_idx(torch.arange(self.num_envs, device=self.device))
         self.init_done = True
@@ -217,14 +217,14 @@ class Bolt10(VecTask):
 
         asset_options = gymapi.AssetOptions()
         asset_options.default_dof_drive_mode = gymapi.DOF_MODE_EFFORT
-        asset_options.collapse_fixed_joints = True
+        # asset_options.collapse_fixed_joints = True
         asset_options.replace_cylinder_with_capsule = True
-        asset_options.flip_visual_attachments = True
+        # asset_options.flip_visual_attachments = True
         asset_options.fix_base_link = self.cfg["env"]["urdfAsset"]["fixBaseLink"]
         asset_options.density = 0.001
         asset_options.angular_damping = 0.0
         asset_options.linear_damping = 0.0
-        asset_options.armature = 0.0
+        # asset_options.armature = 0.0
         asset_options.thickness = 0.01
         asset_options.disable_gravity = False
 
@@ -253,6 +253,9 @@ class Bolt10(VecTask):
         self.base_index = 0
 
         dof_props = self.gym.get_asset_dof_properties(bolt_asset)
+        dof_props["stiffness"].fill(0.0)
+        dof_props["damping"].fill(0.1)
+
 
         # env origins
         self.env_origins = torch.zeros(self.num_envs, 3, device=self.device, requires_grad=False)
@@ -300,15 +303,15 @@ class Bolt10(VecTask):
         self.reset_buf = torch.where(self.progress_buf >= self.max_episode_length - 1, torch.ones_like(self.reset_buf), self.reset_buf)
 
     def compute_observations(self):
-        self.measured_heights = self.get_heights()
-        heights = torch.clip(self.root_states[:, 2].unsqueeze(1) - 0.5 - self.measured_heights, -1, 1.) * self.height_meas_scale
+        # self.measured_heights = self.get_heights()
+        # heights = torch.clip(self.root_states[:, 2].unsqueeze(1) - 0.5 - self.measured_heights, -1, 1.) * self.height_meas_scale
         self.obs_buf = torch.cat((  self.base_lin_vel * self.lin_vel_scale,
                                     self.base_ang_vel  * self.ang_vel_scale,
                                     self.projected_gravity,
                                     self.commands[:, :3] * self.commands_scale,
                                     self.dof_pos * self.dof_pos_scale,
                                     self.dof_vel * self.dof_vel_scale,
-                                    heights,
+                                    # heights,
                                     self.actions
                                     ), dim=-1)
 
@@ -356,11 +359,11 @@ class Bolt10(VecTask):
         self.feet_air_time *= ~contact
 
         # cosmetic penalty for hip motion
-        rew_hip = torch.sum(torch.abs(self.dof_pos[:, [0, 3, 6, 9]] - self.default_dof_pos[:, [0, 3, 6, 9]]), dim=1)* self.rew_scales["hip"]
+        # rew_hip = torch.sum(torch.abs(self.dof_pos[:, [0, 3, 6, 9]] - self.default_dof_pos[:, [0, 3, 6, 9]]), dim=1)* self.rew_scales["hip"]
 
         # total reward
         self.rew_buf = rew_lin_vel_xy + rew_ang_vel_z + rew_lin_vel_z + rew_ang_vel_xy + rew_orient + rew_base_height +\
-                    rew_torque + rew_joint_acc + rew_collision + rew_action_rate + rew_airTime + rew_hip + rew_stumble
+                    rew_torque + rew_joint_acc + rew_collision + rew_action_rate + rew_airTime + rew_stumble
         self.rew_buf = torch.clip(self.rew_buf, min=0., max=None)
 
         # add termination reward
@@ -379,13 +382,12 @@ class Bolt10(VecTask):
         self.episode_sums["action_rate"] += rew_action_rate
         self.episode_sums["air_time"] += rew_airTime
         self.episode_sums["base_height"] += rew_base_height
-        self.episode_sums["hip"] += rew_hip
 
     def reset_idx(self, env_ids):
         positions_offset = torch_rand_float(0.5, 1.5, (len(env_ids), self.num_dof), device=self.device)
-        velocities = torch_rand_float(-0.1, 0.1, (len(env_ids), self.num_dof), device=self.device)
+        velocities = torch_rand_float(-0.0, 0.0, (len(env_ids), self.num_dof), device=self.device)
 
-        self.dof_pos[env_ids] = self.default_dof_pos[env_ids] * positions_offset
+        self.dof_pos[env_ids] = self.default_dof_pos[env_ids] #* positions_offset
         self.dof_vel[env_ids] = velocities
 
         env_ids_int32 = env_ids.to(dtype=torch.int32)
@@ -394,7 +396,7 @@ class Bolt10(VecTask):
             self.update_terrain_level(env_ids)
             self.root_states[env_ids] = self.base_init_state
             self.root_states[env_ids, :3] += self.env_origins[env_ids]
-            self.root_states[env_ids, :2] += torch_rand_float(-0.5, 0.5, (len(env_ids), 2), device=self.device)
+            # self.root_states[env_ids, :2] += torch_rand_float(-0.5, 0.5, (len(env_ids), 2), device=self.device)
         else:
             self.root_states[env_ids] = self.base_init_state
 
@@ -442,7 +444,8 @@ class Bolt10(VecTask):
         self.actions = actions.clone().to(self.device)
         for i in range(self.decimation):
             torques = torch.clip(self.Kp*(self.action_scale*self.actions + self.default_dof_pos - self.dof_pos) - self.Kd*self.dof_vel,
-                                 -80., 80.)
+                                 -3.5, 3.5)
+            print("torque: ", torques[0])
             self.gym.set_dof_actuation_force_tensor(self.sim, gymtorch.unwrap_tensor(torques))
             self.torques = torques.view(self.torques.shape)
             self.gym.simulate(self.sim)

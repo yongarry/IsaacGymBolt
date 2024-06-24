@@ -2,8 +2,8 @@
 <robot name="bolt10_urdf">
 <link name="base_link">
     <inertial>
-      <!-- <origin rpy="0 0 0" xyz="-0.011993 0 -0.019033"/> -->
-      <!-- <mass value="0.556324"/> -->
+      <origin rpy="0 0 0" xyz="-0.011993 0 -0.019033"/>
+      <mass value="0.556324"/>
       <origin rpy="0 0 0" xyz="0.004 0 -0.002"/>
       <mass value="1.055"/>
       <inertia ixx="0.006" ixy="0.0" ixz="0.000056" iyy="0.005" iyz="0.0" izz="0.006"/>

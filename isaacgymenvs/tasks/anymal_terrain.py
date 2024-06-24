@@ -253,6 +253,7 @@ class AnymalTerrain(VecTask):
         self.base_index = 0
 
         dof_props = self.gym.get_asset_dof_properties(anymal_asset)
+        print("dof: ", dof_props) 
 
         # env origins
         self.env_origins = torch.zeros(self.num_envs, 3, device=self.device, requires_grad=False)

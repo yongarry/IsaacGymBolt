@@ -5,7 +5,7 @@ physics_engine: 'physx'
 
 env:
   numEnvs: ${resolve_default:4096,${...num_envs}}
-  numObservations: 188
+  numObservations: 42
   numActions: 10
   envSpacing: 3.  # [m]
   enableDebugVis: False
@@ -28,40 +28,40 @@ env:
     slopeTreshold: 0.5
 
   baseInitState:
-    pos: [0.0, 0.0, 0.62] # x,y,z [m]
+    pos: [0.0, 0.0, 0.6] # x,y,z [m]
     rot: [0.0, 0.0, 0.0, 1.0] # x,y,z,w [quat]
     vLinear: [0.0, 0.0, 0.0]  # x,y,z [m/s]
     vAngular: [0.0, 0.0, 0.0]  # x,y,z [rad/s]
 
   randomCommandVelocityRanges:
     # train
-    linear_x: [-1., 1.] # min max [m/s]
-    linear_y: [-1., 1.]   # min max [m/s]
-    yaw: [-3.14, 3.14]    # min max [rad/s]
+    linear_x: [-0.5, 0.5] # min max [m/s]
+    linear_y: [-0., 0.]   # min max [m/s]
+    yaw: [-0.0, 0.0]    # min max [rad/s]
 
   control:
     # PD Drive parameters:
-    stiffness: 80.0  # [N*m/rad]
-    damping: 2.0     # [N*m*s/rad]
+    stiffness: 0.6 # [N*m/rad]
+    damping: 0.1     # [N*m*s/rad]
     # action scale: target angle = actionScale * action + defaultAngle
     actionScale: 0.5
     # decimation: Number of control action updates @ sim DT per policy DT
     decimation: 4
 
   defaultJointAngles:  # = target angles when action = 0.0
-    L_HipYaw_Joint: 0.03    # [rad]
-    L_HipRoll_Joint: 0.03    # [rad]
-    L_HipPitch_Joint: -0.03   # [rad]
+    L_HipYaw_Joint: 0.0    # [rad]
+    L_HipRoll_Joint: 0.0    # [rad]
+    L_HipPitch_Joint: 0.0    # [rad]
 
-    L_KneePitch_Joint: -0.03   # [rad]
-    L_AnklePitch_Joint: 0.4     # [rad]
+    L_KneePitch_Joint: 0.0   # [rad]
+    L_AnklePitch_Joint: 0.0   # [rad]
     
-    R_HipYaw_Joint: -0.4    # [rad]
-    R_HipRoll_Joint: 0.4     # [rad]
-    R_HipPitch_Joint: -0.4    # [rad]
+    R_HipYaw_Joint: 0.0    # [rad]
+    R_HipRoll_Joint: 0.0    # [rad]
+    R_HipPitch_Joint: 0.0    # [rad]
 
-    R_KneePitch_Joint: -0.8    # [rad]
-    R_AnklePitch_Joint: 0.8     # [rad]
+    R_KneePitch_Joint: 0.0    # [rad]
+    R_AnklePitch_Joint: 0.0     # [rad]
 
   urdfAsset:
     file: "urdf/bolt10/urdf/bolt10.urdf"
@@ -98,7 +98,7 @@ env:
     heightMeasurementScale: 5.0
 
     # noise 
-    addNoise: true
+    addNoise: false
     noiseLevel: 1.0 # scales other values
     dofPositionNoise: 0.01
     dofVelocityNoise: 1.5
@@ -108,9 +108,9 @@ env:
     heightMeasurementNoise: 0.06
 
     #randomization
-    randomizeFriction: true
+    randomizeFriction: false
     frictionRange: [0.5, 1.25]
-    pushRobots: true
+    pushRobots: false
     pushInterval_s: 15
 
     # episode length in seconds
@@ -119,8 +119,8 @@ env:
   # viewer cam:
   viewer:
     refEnv: 0
-    pos: [0, 0, 10]  # [m]
-    lookat: [1., 1, 9]  # [m]
+    pos: [-1, -1, 1]  # [m]
+    lookat: [1., 1, 0.9]  # [m]
 
   # set to True if you use camera sensors in the environment
   enableCameraSensors: False
